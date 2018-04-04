@@ -1,6 +1,10 @@
-from flask import Flask
-from flask import request
+from mattermostdriver import Driver
+from flask import Flask, request, abort
+import flask
+from datetime import datetime
 import pytz
+from pprint import pprint, pformat
+import re
 import local_settings as conf
 
 __doc__ = """\
@@ -8,6 +12,13 @@ ping.py
    Basic flask application to respond to a slash command in Mattermost
 """
 
+mm = Driver({'url': conf.MM_HOST,
+             'token': conf.MM_TOKEN,
+             'scheme': conf.MM_SCHEME,
+             'port': conf.MM_PORT,
+             'basepath': '/api/v4',
+             'verify': True})
+mm.login()
 app = Flask(__name__)
 
 
@@ -37,36 +48,61 @@ def handle_invalid_usage(error):
 def authorized(func):
     def _wrapper(*args, **kwargs):
         if 'Authorization' not in request.headers:
+            print('no token')
             APIError("No Token", status_code=401)
+            flask.abort(401, "No Token")
         if conf.AUTH_TKN not in request.headers['Authorization']:
+            print('token invalid')
             APIError("Not Authorized", status_code=401)
-        return func
+            flask.abort(401, "Not Authorized")
+        return func(*args, **kwargs)
     return _wrapper
 
 
-def do_convert(tz_to_convert):
-    pytz.all_timezones
-    user_tz = tz_to_convert
-    datetime.now(timezone(user_tz)).strftime(format)
+def my_dec(func):
+    def wrapper(*org_args, **org_kwargs):
+        from pprint import pprint as pp
+        pp(request.headers)
+        return func(*org_args, **org_kwargs)
+    return wrapper
 
 
+def do_convert(users):
+    ret = ""
+    mm_users = mm.users.get_users()
+    users = re.sub(r'@', '', users).split()
+
+    intersect_users = list(filter(set([x['username'] for x in mm_users]).__contains__, users))
+
+    not_found_users = list(set(users).difference(intersect_users))
+    if not_found_users:
+        ret += "Users not found: @" + ' @'.join(not_found_users) + "\n"
+
+    convert_users = [x for x in mm_users if x['username'] in intersect_users]
+    for user in convert_users:
+        tz = user['position']
+        if tz in pytz.all_timezones:
+            date = datetime.now(pytz.timezone(tz)).strftime(conf.TIME_FMT)
+        else:
+            date = "invalid tz"
+        ret += '@%s localtime %s\n' % (user['username'], date)
+
+    return ret
+
+
+@app.route("/localtime", methods=["POST"])
 @authorized
-@app.route("/slash", methods=["POST"])
 def slash():
-    from pprint import pprint, pformat
-    import re
 
     ret = ""
 
     if request.form['text'] == "help":
         ret += pformat(pytz.all_timezones, indent=4)
 
-    elif re.match(r'convert', request.form['text'], re.I):
-        do_convert(re.compile('\W+').split(request.form['text'])[1:])
-        ret += pformat(re.compile('\W+').split(request.form['text']))
-
     else:
-        ret += pformat("PONG! %s" % pformat(re.compile('\W+').split(request.form['text'])))
+        ret = do_convert(request.form['text'])
+        # ret += pformat("PONG! %s" % pformat(re.compile('\W+').split(request.form['text'])))
+        # ret += '\nraw form: %s' % (request.form['text'])
 
     return (ret)
 
