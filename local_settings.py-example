@@ -1,1 +1,9 @@
 AUTH_TKN = "thisisaterribleauthtoken"
+TIME_FMT = "%A %H:%M %z"
+
+MM_TEAM = "your MM team"
+MM_HOST = 'your.mattermost.server'
+MM_TOKEN = 'an OATH token'
+MM_TEST_CHANNEL_ID = 'yourchannelid for testing'
+MM_SCHEME = 'https'
+MM_PORT = 443
