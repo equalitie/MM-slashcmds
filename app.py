@@ -70,11 +70,15 @@ def my_dec(func):
 def do_convert(users):
     ret = ""
     mm_users = mm.users.get_users()
-    users = re.sub(r'@', '', users).split()
+
+    if users == "all":
+        users = [x['username'] for x in mm_users]
+    else:
+        users = re.sub(r'@', '', users).split()
 
     intersect_users = list(filter(set([x['username'] for x in mm_users]).__contains__, users))
-
     not_found_users = list(set(users).difference(intersect_users))
+
     if not_found_users:
         ret += "Users not found: @" + ' @'.join(not_found_users) + "\n"
 
@@ -97,14 +101,27 @@ def slash():
     ret = ""
 
     if request.form['text'] == "help":
-        ret += pformat(pytz.all_timezones, indent=4)
+        ret = pformat(pytz.all_timezones, indent=4)
+
+    elif request.form['text'] == "all":
+        ret = do_convert("all")
 
     else:
         ret = do_convert(request.form['text'])
-        # ret += pformat("PONG! %s" % pformat(re.compile('\W+').split(request.form['text'])))
-        # ret += '\nraw form: %s' % (request.form['text'])
 
     return (ret)
+
+
+@app.route('/poll', methods=["POST"])
+def poll():
+    from pprint import pformat
+    ret = ''
+    # ret += pformat(request.form['text'])
+    ret += pformat(request.headers)
+    # ret += "\n" + pformat(request.headers, indent=4)
+    print (ret)
+    return (ret)
+
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
