@@ -71,7 +71,7 @@ def do_convert(users):
     ret = ""
     mm_users = mm.users.get_users()
 
-    if users == "all":
+    if users is None:
         users = [x['username'] for x in mm_users]
     else:
         users = re.sub(r'@', '', users).split()
@@ -104,7 +104,7 @@ def slash():
         ret = pformat(pytz.all_timezones, indent=4)
 
     elif request.form['text'] == "all":
-        ret = do_convert("all")
+        ret = do_convert(None)
 
     else:
         ret = do_convert(request.form['text'])
