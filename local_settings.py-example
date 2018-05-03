@@ -1,4 +1,4 @@
-AUTH_TKN = "thisisaterribleauthtoken"
+AUTH_TKN = ["thisisaterribleauthtoken", "youcanhavemanytokens"]
 TIME_FMT = "%A %H:%M %z"
 
 MM_TEAM = "your MM team"

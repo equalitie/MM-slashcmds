@@ -51,7 +51,7 @@ def authorized(func):
             print('no token')
             APIError("No Token", status_code=401)
             flask.abort(401, "No Token")
-        if conf.AUTH_TKN not in request.headers['Authorization']:
+        if request.headers['Authorization'] not in conf.AUTH_TKN:
             print('token invalid')
             APIError("Not Authorized", status_code=401)
             flask.abort(401, "Not Authorized")
